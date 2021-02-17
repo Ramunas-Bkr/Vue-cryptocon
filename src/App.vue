@@ -51,6 +51,10 @@
           <div
             v-for="t in tickers"
             :key="t.name"
+            @click="selectGraph(t)"
+            :class="{
+              'border-2': sell === t
+            }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -84,17 +88,23 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <section class="relative">
+      <section v-if="sell" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          VUE - USD
+          {{ sell.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
-          <div class="bg-purple-800 border w-10 h-24"></div>
-          <div class="bg-purple-800 border w-10 h-32"></div>
-          <div class="bg-purple-800 border w-10 h-48"></div>
-          <div class="bg-purple-800 border w-10 h-16"></div>
+          <div
+            v-for="(bar, index) in normalizeGraph()"
+            :key="index"
+            :style="{ height: `${bar}%` }"
+            class="bg-purple-800 border w-10"
+          ></div>
         </div>
-        <button type="button" class="absolute top-0 right-0">
+        <button
+          @click="sell = null"
+          type="button"
+          class="absolute top-0 right-0"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -134,21 +144,45 @@ export default {
   data() {
     return {
       ticker: "",
-      tickers: [
-        { name: "name1", price: 10 },
-        { name: "name2", price: 15 },
-        { name: "name3", price: 20 }
-      ]
+      tickers: [],
+      sell: null,
+      graph: []
     };
   },
   methods: {
     add() {
-      const newTicker = { name: "ticker", price: 30 };
-      this.tickers.push(newTicker);
+      const currentTicker = { name: this.ticker, price: "-" };
+      this.tickers.push(currentTicker);
+      setInterval(async () => {
+        const f = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=EUR&api_key=b816ed874389e878cfbd4d683a646e0ac4c755575796806ff88416015a4846d3`
+        );
+        const data = await f.json();
+        this.tickers.find(t => t.name === currentTicker.name).price =
+          data.EUR > 1 ? data.EUR.toFixed(2) : data.EUR.toPrecision(2);
+
+        if (this.sell?.name === currentTicker.name) {
+          this.graph.push(data.EUR);
+        }
+      }, 3000);
       this.ticker = "";
     },
+
+    selectGraph(ticker) {
+      this.sell = ticker;
+      this.graph = [];
+    },
+
     removeTicker(tickerToRemove) {
       this.tickers = this.tickers.filter(t => t !== tickerToRemove);
+    },
+
+    normalizeGraph() {
+      const maxHeight = Math.max(...this.graph);
+      const minHeight = Math.min(...this.graph);
+      return this.graph.map(
+        price => 5 + ((price - minHeight) * 95) / (maxHeight - minHeight)
+      );
     }
   }
 };

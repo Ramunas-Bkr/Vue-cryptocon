@@ -90,7 +90,7 @@
       </template>
       <section v-if="sell" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sell.name }} - USD
+          {{ sell.name }} - EUR
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -187,5 +187,3 @@ export default {
   }
 };
 </script>
-
-<style src="./app.css"></style>
